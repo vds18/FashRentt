@@ -15,22 +15,42 @@ dotenv.config();
 
 const app = express();
 
+// CORS configuration
+const allowedOrigins = [
+  "http://localhost:3000",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
 
+// Middleware
 app.use(express.json());
+
+// API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/vendors", vendorRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/outfits", outfitRoutes);
 app.use("/api/bookings", bookingRoutes);
+
+// Booking test route
 app.get("/api/bookings/test-route", (req, res) => {
-  res.json({ success: true, message: "Booking route is working" });
+  res.json({
+    success: true,
+    message: "Booking route is working",
+  });
 });
 
 // Main API route
@@ -49,13 +69,13 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Connect database and start server
+// MongoDB connection
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
     if (!process.env.MONGO_URI) {
-      throw new Error("MONGO_URI is missing in .env");
+      throw new Error("MONGO_URI is missing");
     }
 
     await mongoose.connect(process.env.MONGO_URI);
